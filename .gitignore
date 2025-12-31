@@ -1,0 +1,4 @@
+error_logs/
+logs/
+output/
+__pycache__/
