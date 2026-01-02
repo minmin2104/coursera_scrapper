@@ -3,10 +3,15 @@ from my_log import MyLog
 import json
 from botasaurus.soupify import soupify
 import coursera_util
+import time
+import os
 
 
+MAX_RUNTIME_SECONDS = 3 * 60 * 60
+START_TIME = time.time()
 mylog = MyLog()
 log = mylog.log
+BATCH_NUM = os.getenv("BATCH_NUM")
 
 
 def get_links(path):
@@ -16,10 +21,16 @@ def get_links(path):
 
 
 @browser(
-        output="test",
-        reuse_driver=True
+        cache=True,
+        parallel=5,
+        output=f"batch_{BATCH_NUM}",
+        reuse_driver=True,
+        max_retry=5,
         )
 def scrape_data(driver: Driver, data):
+    if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
+        log("Time limit reached. Skipping remaining task")
+        return None
     log(f"Scraping: {data}")
     slug = data.split("/learn/")[1]
     link1 = f"https://www.coursera.org/api/courses.v1/?q=slug&slug={slug}&fields=description,instructorIds,partnerIds,primaryLanguages"  # noqa
@@ -72,8 +83,9 @@ def scrape_data(driver: Driver, data):
 
 @mylog.log_time
 def main():
-    links = get_links("courses_link.json")
-    scrape_data(links[:1])
+    filename = f"batches/batch_{BATCH_NUM}.json"
+    links = get_links(filename)
+    scrape_data(links)
 
 
 if __name__ == "__main__":
