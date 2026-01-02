@@ -85,7 +85,7 @@ def scrape_data(driver: Driver, data):
 def main():
     filename = f"batches/batch_{BATCH_NUM}.json"
     links = get_links(filename)
-    scrape_data(links)
+    scrape_data(links[:10])
 
 
 if __name__ == "__main__":

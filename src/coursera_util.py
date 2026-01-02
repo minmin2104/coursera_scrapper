@@ -9,7 +9,10 @@ def get_hours_to_complete(soup: BeautifulSoup):
     elem = soup.find("div", attrs={"data-e2e": "key-information"})
     if not elem:
         return ""
-    estimated_complete = elem.find("div", string=contain_to_complete_str).get_text()  # noqa
+    estimated_complete_div = elem.find("div", string=contain_to_complete_str)
+    if not estimated_complete_div:
+        return "N/A"
+    estimated_complete = estimated_complete_div.get_text()
     return estimated_complete
 
 

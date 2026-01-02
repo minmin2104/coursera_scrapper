@@ -2,3 +2,4 @@ error_logs/
 logs/
 output/
 __pycache__/
+cache/
