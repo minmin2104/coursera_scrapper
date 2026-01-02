@@ -114,3 +114,74 @@ def get_difficulty_level(soup: BeautifulSoup):
     if not div:
         return "N/A"
     return div.get_text()
+
+
+def get_instructor(soup: BeautifulSoup):
+    target_a = soup.find("a", attrs={"data-track-component": "hero-instructor"})  # noqa
+    if not target_a:
+        return "N/A"
+    instructor = target_a.find("span").get_text()
+    return instructor
+
+
+def get_partner(soup: BeautifulSoup):
+    target_a = soup.find("a", attrs={"data-track-component": "partner"})
+    if not target_a:
+        return "N/A"
+    partner = target_a.find("span").get_text()
+    return partner
+
+
+def filter_courses_json(courses_json: dict):
+    elements = courses_json["elements"]
+    element = elements[0]
+    title = element["name"]
+    description = element["description"]
+    primary_lang = element["primaryLanguages"][0]
+    return {
+            "title": title,
+            "description": description,
+            "primaryLanguages": primary_lang
+            }
+
+
+def filter_material_json(material_json: dict):
+    linked = material_json.get("linked", {})
+
+    # 1. Create lookups for quick access
+    # Map items by ID
+    items_map = {
+        item["id"]: {
+            "name": item["name"],
+            "id": item["id"],
+            "slug": item["slug"],
+            "time_mins": round(item["timeCommitment"] / 60000, 2)
+        }
+        for item in linked.get("onDemandCourseMaterialItems.v2", [])
+    }
+
+    # Map lessons by ID
+    lessons_map = {
+        lesson["id"]: {
+            "name": lesson["name"],
+            "id": lesson["id"],
+            "slug": lesson["slug"],
+            "total_time_mins": round(lesson["timeCommitment"] / 60000, 2),
+            "items": [items_map[iid] for iid in lesson["itemIds"] if iid in items_map]
+        }
+        for lesson in linked.get("onDemandCourseMaterialLessons.v1", [])
+    }
+
+    # 2. Build the final nested structure starting from Modules
+    filtered_modules = []
+    for module in linked.get("onDemandCourseMaterialModules.v1", []):
+        filtered_modules.append({
+            "module_name": module["name"],
+            "module_id": module["id"],
+            "description": module.get("description", ""),
+            "total_duration_mins": round(module["timeCommitment"] / 60000, 2),
+            "lessons": [lessons_map[lid] for lid in module["lessonIds"] if lid in lessons_map]
+        })
+
+    return filtered_modules
+
